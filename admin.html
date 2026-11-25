@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการออเดอร์ & พิมพ์ใบจ่าหน้าพัสดุ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ซ่อนส่วนที่ไม่ต้องการเวลาสั่ง Print ใบจ่าหน้า */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-stone-100 p-6 font-sans">
+
+  <div class="max-w-5xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-stone-800">📦 ระบบหยิบสินค้า & แพ็คจัดส่ง (Pick & Pack)</h1>
+      <button onclick="loadOrders()" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700">รีเฟรชข้อมูล</button>
+    </div>
+
+    <!-- ตารางรายการออเดอร์ -->
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-stone-200 text-stone-700 text-sm">
+            <th class="p-3">รหัสออเดอร์</th>
+            <th class="p-3">ลูกค้า</th>
+            <th class="p-3">รายการที่ต้องหยิบ (Picking List)</th>
+            <th class="p-3">ยอดเงิน</th>
+            <th class="p-3">สถานะ</th>
+            <th class="p-3 text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="orderTable" class="divide-y text-sm">
+          <tr><td colspan="6" class="p-6 text-center text-stone-400">กำลังโหลดข้อมูลจาก Google Sheet...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- พื้นที่สำหรับพิมพ์ใบจ่าหน้าพัสดุ (ซ่อนไว้บนหน้าจอปกติ) -->
+  <div id="printArea" class="hidden print:block p-8 border-2 border-black max-w-lg mx-auto bg-white">
+    <div class="border-b-2 border-black pb-4 mb-4">
+      <h2 class="text-xl font-bold">ใบจ่าหน้าพัสดุ (Shipping Label)</h2>
+      <p class="text-sm">Order ID: <span id="pOrderId" class="font-bold"></span></p>
+    </div>
+    <div class="mb-6">
+      <p class="text-xs font-bold uppercase text-stone-500">ผู้ส่ง (SENDER):</p>
+      <p class="font-bold">ร้าน Golden Drop Honey</p>
+      <p class="text-sm">99/9 หมู่ 1 ต.สุเทพ อ.เมือง จ.เชียงใหม่ 50200 โทร. 089-999-9999</p>
+    </div>
+    <div class="mb-6 p-4 border border-black rounded">
+      <p class="text-xs font-bold uppercase text-stone-500">ผู้รับ (RECEIVER):</p>
+      <p id="pName" class="text-lg font-bold mt-1"></p>
+      <p id="pPhone" class="font-bold"></p>
+      <p id="pAddress" class="mt-1"></p>
+    </div>
+    <div class="border-t border-dashed border-black pt-3 text-xs">
+      <p class="font-bold">รายการสินค้าในกล่อง (Packing Slip):</p>
+      <p id="pItems" class="mt-1"></p>
+    </div>
+  </div>
+
+  <script>
+    // นำ URL ของ Google Apps Script มาใส่ตรงนี้ (ตัวเดียวกับหน้า index.html)
+    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+    let allOrders = [];
+
+    async function loadOrders() {
+      const tbody = document.getElementById('orderTable');
+      tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center">กำลังโหลด...</td></tr>';
+      
+      const res = await fetch(SCRIPT_URL);
+      allOrders = await res.json();
+      tbody.innerHTML = '';
+
+      allOrders.reverse().forEach((order, idx) => {
+        const itemsText = [];
+        if (order.SKU_1_Qty > 0) itemsText.push(`• น้ำผึ้งดอกลำไย x ${order.SKU_1_Qty} ขวด`);
+        if (order.SKU_2_Qty > 0) itemsText.push(`• น้ำผึ้งป่าเดือนห้า x ${order.SKU_2_Qty} ขวด`);
+
+        const isPacked = order.Status === 'แพ็คแล้ว';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-stone-50">
+            <td class="p-3 font-bold">${order.Order_ID}<br><span class="text-xs font-normal text-stone-400">${order.Timestamp}</span></td>
+            <td class="p-3"><strong>${order.Customer_Name}</strong><br>${order.Phone}</td>
+            <td class="p-3 text-amber-800 font-medium">${itemsText.join('<br>')}</td>
+            <td class="p-3 font-bold">${order.Total_Price} ฿</td>
+            <td class="p-3">
+              <span class="px-2 py-1 rounded text-xs font-bold ${isPacked ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                ${order.Status}
+              </span>
+            </td>
+            <td class="p-3 text-center space-x-2">
+              <button onclick="printLabel('${order.Order_ID}')" class="bg-stone-800 text-white px-3 py-1.5 rounded text-xs hover:bg-black">
+                🖨️ พิมพ์ใบจ่าหน้า
+              </button>
+              ${!isPacked ? `
+                <button onclick="markAsPacked('${order.Order_ID}')" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700">
+                  ✅ แพ็คเสร็จสิ้น
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function printLabel(orderId) {
+      const order = allOrders.find(o => o.Order_ID === orderId);
+      if (!order) return;
+
+      document.getElementById('pOrderId').innerText = order.Order_ID;
+      document.getElementById('pName').innerText = order.Customer_Name;
+      document.getElementById('pPhone').innerText = 'โทร: ' + order.Phone;
+      document.getElementById('pAddress').innerText = order.Address;
+
+      let items = [];
+      if (order.SKU_1_Qty > 0) items.push(`น้ำผึ้งดอกลำไย (${order.SKU_1_Qty} ขวด)`);
+      if (order.SKU_2_Qty > 0) items.push(`น้ำผึ้งป่าเดือนห้า (${order.SKU_2_Qty} ขวด)`);
+      document.getElementById('pItems').innerText = items.join(' , ');
+
+      window.print();
+    }
+
+    async function markAsPacked(orderId) {
+      if (!confirm(`ยืนยันการแพ็คสินค้าออเดอร์ ${orderId} เรียบร้อยแล้วใช่หรือไม่?`)) return;
+      
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'updateStatus', orderId: orderId, status: 'แพ็คแล้ว' })
+      });
+      loadOrders();
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

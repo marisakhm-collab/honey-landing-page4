@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golden Drop - น้ำผึ้งแท้ 100% จากธรรมชาติ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-amber-50 text-stone-800 font-sans">
+
+  <!-- Header -->
+  <header class="bg-amber-600 text-white py-6 text-center shadow-md">
+    <h1 class="text-3xl font-bold">🍯 Golden Drop Honey</h1>
+    <p class="mt-1 text-amber-100">น้ำผึ้งแท้บริสุทธิ์ เก็บสดจากฟาร์มธรรมชาติ 100%</p>
+  </header>
+
+  <!-- รายการสินค้า 2 SKUs -->
+  <main class="max-w-4xl mx-auto p-6">
+    <h2 class="text-2xl font-bold text-center mb-6 text-amber-900">เลือกสินค้าของเรา</h2>
+    
+    <div class="grid md:grid-cols-2 gap-6 mb-10">
+      <!-- SKU 1 -->
+      <div class="bg-white rounded-xl shadow p-5 border border-amber-200">
+        <img src="images/sku1-longan.jpg" alt="น้ำผึ้งดอกลำไย" class="w-full h-48 object-cover rounded-lg mb-4 bg-amber-100">
+        <span class="text-xs bg-amber-200 text-amber-900 px-2 py-1 rounded">SKU-01</span>
+        <h3 class="text-xl font-bold mt-2">น้ำผึ้งดอกลำไยแท้ (500 กรัม)</h3>
+        <p class="text-sm text-stone-600 mt-1">หอมหวานละมุน กลิ่นดอกลำไยชัดเจน เหมาะสำหรับชงเครื่องดื่มและเบเกอรี่</p>
+        <p class="text-lg font-bold text-amber-600 mt-3">ราคา 250 บาท</p>
+        <div class="mt-4 flex items-center gap-3">
+          <label class="text-sm font-medium">จำนวน (ขวด):</label>
+          <input type="number" id="sku1" min="0" value="0" onchange="calculateTotal()" class="w-20 border rounded p-1 text-center">
+        </div>
+      </div>
+
+      <!-- SKU 2 -->
+      <div class="bg-white rounded-xl shadow p-5 border border-amber-200">
+        <img src="images/sku2-wild.jpg" alt="น้ำผึ้งป่าเดือนห้า" class="w-full h-48 object-cover rounded-lg mb-4 bg-amber-100">
+        <span class="text-xs bg-amber-200 text-amber-900 px-2 py-1 rounded">SKU-02</span>
+        <h3 class="text-xl font-bold mt-2">น้ำผึ้งป่าเดือนห้า (500 กรัม)</h3>
+        <p class="text-sm text-stone-600 mt-1">เข้มข้น อุดมด้วยเกสรดอกไม้ป่านานาพรรณ มีสารต้านอนุมูลอิสระสูง</p>
+        <p class="text-lg font-bold text-amber-600 mt-3">ราคา 390 บาท</p>
+        <div class="mt-4 flex items-center gap-3">
+          <label class="text-sm font-medium">จำนวน (ขวด):</label>
+          <input type="number" id="sku2" min="0" value="0" onchange="calculateTotal()" class="w-20 border rounded p-1 text-center">
+        </div>
+      </div>
+    </div>
+
+    <!-- ฟอร์มสั่งซื้อ -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-amber-200 max-w-xl mx-auto">
+      <h3 class="text-xl font-bold mb-4 text-amber-900">ข้อมูลจัดส่งสินค้า</h3>
+      <form id="orderForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">ชื่อ-นามสกุล ผู้รับ</label>
+          <input type="text" id="name" required class="w-full border rounded-lg p-2.5" placeholder="เช่น สมชาย ใจดี">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">เบอร์โทรศัพท์</label>
+          <input type="tel" id="phone" required class="w-full border rounded-lg p-2.5" placeholder="08X-XXX-XXXX">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">ที่อยู่จัดส่ง (พร้อมรหัสไปรษณีย์)</label>
+          <textarea id="address" rows="3" required class="w-full border rounded-lg p-2.5" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+        </div>
+
+        <div class="bg-amber-100 p-4 rounded-lg flex justify-between items-center font-bold text-lg">
+          <span>ยอดรวมทั้งสิ้น:</span>
+          <span class="text-amber-700"><span id="totalPrice">0</span> บาท</span>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-lg transition">
+          ยืนยันการสั่งซื้อ
+        </button>
+      </form>
+      <div class="mt-4 text-center">
+        <a href="admin.html" class="text-xs text-stone-400 hover:underline">เข้าสู่ระบบหลังบ้าน (สำหรับร้านค้า)</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // นำ URL ของ Google Apps Script มาใส่ตรงนี้
+    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+
+    function calculateTotal() {
+      const q1 = parseInt(document.getElementById('sku1').value) || 0;
+      const q2 = parseInt(document.getElementById('sku2').value) || 0;
+      const total = (q1 * 250) + (q2 * 390);
+      document.getElementById('totalPrice').innerText = total;
+      return total;
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const total = calculateTotal();
+      if (total === 0) {
+        alert('กรุณาเลือกสินค้าอย่างน้อย 1 ขวดครับ');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = 'กำลังบันทึกออเดอร์...';
+
+      const payload = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        sku1: document.getElementById('sku1').value,
+        sku2: document.getElementById('sku2').value,
+        totalPrice: total
+      };
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        alert(`สั่งซื้อสำเร็จ! รหัสคำสั่งซื้อของคุณคือ ${result.orderId}`);
+        document.getElementById('orderForm').reset();
+        calculateTotal();
+      } catch (err) {
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'ยืนยันการสั่งซื้อ';
+      }
+    });
+  </script>
+</body>
+</html>
